@@ -1,0 +1,196 @@
+//========= Includes =========//
+#include <iostream>
+
+//========= Using ==========//
+using namespace std;
+
+//========= Constants =========//
+const int N = 3;            // The size of 1 square in the sudoku.
+const int EMPTY = 0;        // A sign for an empty cell.
+const int STOP_INPUT = -1;  // A sign for stop get input.
+
+//====== Function Declaration ======//
+void input_sud(int sud[][N*N]);
+bool fill_sud(int sud[][N*N], int row, int col);
+void print_sud(const int sud[][N*N]);
+bool is_legal(const int sud[][N*N], int row, int col, int val);
+bool is_row_ok(const int row[], int col, int val);
+bool is_col_ok(const int sud[][N*N], int row, int col, int val);
+bool is_sqr_ok(const int sud[][N*N], int row, int col, int val);
+
+//========== Main ===========//
+int main()
+{
+    int sud[N*N][N*N] = { { EMPTY } };  // The sudoku board.
+
+    input_sud(sud);
+    fill_sud(sud, 0, 0);
+    print_sud(sud);
+
+    return 0;
+}
+
+//======== Input Sudoku ========//
+// Gets the input for the sudoku,
+// 0 means an empty cell.
+void input_sud(int sud[][N*N])
+{
+    for(int i = 0; i < N*N; i++)
+        for(int j = 0; j < N*N; j++)
+            cin >> sud[i][j];
+}
+
+//======== Fill Sudoku =========//
+// Tries to fill-in the given sudoku board
+// according to the sudoku rules.
+// Returns whether it was possible to solve it or not.
+bool fill_sud(int sud[][N*N], int row, int col)
+{
+    // Points to the row number of the next cell.
+    int next_row = (col == N*N - 1) ? row + 1 : row;
+
+    // Points to the column number of the next cell.
+    int next_col = (col + 1) % (N*N);
+
+    // If we get here, it means we succeed to solve the sudoku.
+    if(row == N*N)  
+        return true;
+
+    // Checks if we are allowed to change the value of the current cell.
+    // If we're not, then we're moving to the next one.
+    if(sud[row][col] != EMPTY)
+        return fill_sud(sud, next_row, next_col);
+
+    // We're about to try and find the legal and appropriate value
+    // to put in the current cell.
+    for(int value = 1; value <= N*N; value++)
+    {
+        sud[row][col] = value;
+
+        // Checks if 'value' can stay in the current cell,
+        // and returns true if it does.
+        if(is_legal(sud, row, col, value) && fill_sud(sud, next_row, next_col))
+            return true;
+
+        // Trial failed!
+        sud[row][col] = EMPTY;
+    }
+
+    // None of the values solved the sudoku.
+    return false;
+}
+
+//======== Print Sudoku ========//
+// Prints the sudoku Graphically.
+void print_sud(const int sud[][N*N])
+{
+    for(int i = 0; i < N*N; i++)
+    {
+        for(int j = 0; j < N*N; j++)
+            cout << sud[i][j] << ' ';
+        cout << endl;
+    }
+}
+
+//========== Is Legal ==========//
+// Checks and returns whether it's legal
+// to put 'val' in A specific cell.
+bool is_legal(const int sud[][N*N], int row, int col, int val)
+{
+    return (is_row_ok(sud[row], col, val) &&
+            is_col_ok(sud, row, col, val) &&
+            is_sqr_ok(sud, row, col, val));
+}
+
+//========= Is Row OK =========//
+// Checks and returns whether it's legal
+// to put 'val' in A specific row.
+bool is_row_ok(const int row[], int col, int val)
+{
+    for(int i = 0; i < N*N; i++)
+        if(i != col && row[i] == val)
+            return false;       // Found the same value again!
+
+    return true;
+}
+
+//========= Is Column OK =========//
+// Checks and returns whether it's legal
+// to put 'val' in A specific column.
+bool is_col_ok(const int sud[][N*N], int row, int col, int val)
+{
+    for(int i = 0; i < N*N; i++)
+        if(i != row && sud[i][col] == val)
+            return false;       // Found the same value again!
+
+    return true;
+}
+
+//========= Is Square OK =========//
+// Checks and returns whether it's legal
+// to put 'val' in A specific square.
+bool is_sqr_ok(const int sud[][N*N], int row, int col, int val)
+{
+    int row_corner = (row / N) * N;
+    // Holds the row number of the current square corner cell.
+
+    int col_corner = (col / N) * N;
+    // Holds the column number of the current square corner cell.
+
+    for(int i = row_corner; i < (row_corner + N); i++)
+        for(int j = col_corner; j < (col_corner + N); j++)
+            if((i != row || j != col) && sud[i][j] == val)
+                return false;       // Found the same value again!
+
+    return true;
+}
+shareimprove this answer
+edited Jun 7 '16 at 20:09
+answered Jun 2 '16 at 23:51
+
+Shlomo Gottlieb
+5811 silver badge55 bronze badges
+1
+I am a recursion fan, and very much like your code. Excellent brevity, quite readable. I did find one small glitch however ... the "is_xxx_ok()" functions do not detect an invalid user input. unit test: provide 2 or more '3's in any single row (or col, or blk). – 2785528 Jul 23 '16 at 15:39
+Thank you @DOUGLASO.MOEN, you're right about the glitch, it was just homework so we had to assume the input is valid. – Shlomo Gottlieb Jan 26 '18 at 10:51
+add a comment
+
+0
+
+The answer given above is similar to what a lot of people have posted at several websites like https://www.geeksforgeeks.org/sudoku-backtracking-7/. TBH, those solutions are not intuitive to me when they don't initialize row and col and call it in the FindUnassignedLocation function. I wanted to give it a shot myself with slight help from another answer I found on LeetCode. If it helps anyone, here you go.
+
+// https://www.pramp.com/challenge/O5PGrqGEyKtq9wpgw6XP
+
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+// Print the sudoku
+void print(vector<vector<char>> board){
+    for(int i = 0; i < board.size(); i++){
+        for(int j = 0; j < board[i].size(); j++){
+            cout << board[i][j] << " ";
+        }
+        cout << endl;
+    }
+    cout << endl;
+}
+
+// Check if sudoku is all filled up
+bool checkIfFilled(vector<vector<char>> board){
+    for(int i = 0; i < 9; i++){
+        for(int j = 0; j < 9; j++){
+            if(board[i][j] == '.')
+                return false;
+        }
+    }
+    return true;
+}
+
+// Check if a given number can be inserted at a given position
+bool checkIfInsertOkay(vector<vector<char>> board, int x, int y, char num){
+    // Check row if num already exists
+    for(int j = 0; j < 9; j++){
+        if(board[x][j] == num)
+            return false;
